@@ -18,7 +18,11 @@ class ExpenseDatabase extends ChangeNotifier{
 
   // create - add new expense
   Future<void> createNewExpense(Expense newExpense) async{
+    // add new expense to db
     await isar.writeTxn(() => isar.expenses.put(newExpense));
+
+    //re-read expenses from db
+    await readExpenses();
   }
 
 
@@ -26,14 +30,34 @@ class ExpenseDatabase extends ChangeNotifier{
   Future<void> readExpenses() async{
     List<Expense> fetchedExpenses = await isar.expenses.where().findAll();
 
+    // give to _allExpenses
     _allExpenses.clear();
     _allExpenses.addAll(fetchedExpenses);
 
+    //update UI
     notifyListeners();
   }
 
 
 
   // update - update expense
+  Future<void> updateExpense(int id, Expense updatedExpense)async {
+    updatedExpense.id = id;
+
+    //update in db
+    await isar.writeTxn(() => isar.expenses.put(updatedExpense));
+
+    // re-read expenses from db
+    await readExpenses();
+  }
+
+  
   // delete - delete expense
+  Future<void> deleteExpense(int id) async{
+    //delete from db
+    await isar.writeTxn(() => isar.expenses.delete(id));
+
+    //re-read expenses from db
+    await readExpenses();
+  }
 }
