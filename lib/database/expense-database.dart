@@ -14,4 +14,26 @@ class ExpenseDatabase extends ChangeNotifier{
   }
 
   List<Expense> get allExpense => _allExpenses;
+
+
+  // create - add new expense
+  Future<void> createNewExpense(Expense newExpense) async{
+    await isar.writeTxn(() => isar.expenses.put(newExpense));
+  }
+
+
+  // read- expense for db
+  Future<void> readExpenses() async{
+    List<Expense> fetchedExpenses = await isar.expenses.where().findAll();
+
+    _allExpenses.clear();
+    _allExpenses.addAll(fetchedExpenses);
+
+    notifyListeners();
+  }
+
+
+
+  // update - update expense
+  // delete - delete expense
 }
