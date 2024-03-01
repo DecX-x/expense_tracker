@@ -1,8 +1,10 @@
 import 'package:expense_tracker/Models/expense.dart';
+import 'package:expense_tracker/bar%20_graph/graph.dart';
 import 'package:expense_tracker/components/list_tile.dart';
 import 'package:expense_tracker/database/expense-database.dart';
 import 'package:expense_tracker/helper/helperfn.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,11 +20,19 @@ class _HomePageState extends State<HomePage>{
   TextEditingController nameController = TextEditingController();
   TextEditingController amountController = TextEditingController();
 
+  Future<Map<int, double>>? _monthlyTotalsFuture;
+
   @override
   void initState() {
     Provider.of<ExpenseDatabase>(context, listen: false).readExpenses();
+
+    refreshGrapData();
     
     super.initState();
+  }
+
+  void refreshGrapData() {
+    _monthlyTotalsFuture = Provider.of<ExpenseDatabase>(context, listen: false).calculateMonthlyTotals();
   }
 
   // opem expense box
@@ -111,27 +121,69 @@ class _HomePageState extends State<HomePage>{
 
         @override
         Widget build(BuildContext context){
-          return Consumer<ExpenseDatabase>(builder: (context, value, child) => Scaffold(
+          return Consumer<ExpenseDatabase>(builder: (context, value, child) {
+
+            int startMonth = value.getStartMonth();
+            int startYear = value.getStartYear();
+            int currentMonth = DateTime.now().month;
+            int currentYear = DateTime.now().year;
+
+            int monthCount = calculateMonthCount(startYear, startMonth, currentYear, currentMonth);
+
+            return Scaffold(
             floatingActionButton: FloatingActionButton(
               onPressed: openExpenseBox,
               child: const Icon(Icons.add),
             ),
-            body: ListView.builder(
-              itemCount: value.allExpense.length,
-              itemBuilder: (context, index) {
-                Expense individualExpense = value.allExpense[index];
-
-
-                return MtListTile(
-                  title: individualExpense.name,
-                  trailing: formatRupiah(double.parse(individualExpense.amount.toString())),
-                  onEditPressed: (context) => openEditBox(individualExpense),
-                  onDeletePressed: (context) => openDeleteBox(individualExpense),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 250,
+                    child: FutureBuilder(
+                      future: _monthlyTotalsFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.done) {
+                          final monthlyTotals = snapshot.data ?? {};
+                    
+                          List<double> monthlySummary = List.generate(monthCount, 
+                          (index) => monthlyTotals[startMonth + index] ?? 0);
+                    
+                          return MybarGraph(
+                            monthlySummary: monthlySummary,
+                            startmonth: startMonth,
+                          );
+                        }
+                        else {
+                          return const Center(child: Text("Loading.."),);
+                        }
+                    
+                    
+                      },
+                      ),
+                  ),
+              
+                Expanded(
+                  child: ListView.builder(
+                  itemCount: value.allExpense.length,
+                  itemBuilder: (context, index) {
+                    Expense individualExpense = value.allExpense[index];
+                  
+                    return MtListTile(
+                      title: individualExpense.name,
+                      trailing: formatRupiah(double.parse(individualExpense.amount.toString())),
+                      onEditPressed: (context) => openEditBox(individualExpense),
+                      onDeletePressed: (context) => openDeleteBox(individualExpense),
+                            );
+                          }
+                        ),
+                ),
+                ],
+              ),
+            )
           );
         }
-        ),
-    ));
-  
+      );
   }
 
   //cancel button

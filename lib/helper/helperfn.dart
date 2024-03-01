@@ -10,3 +10,9 @@ String formatRupiah(double amount) {
       new RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},');
 }
+
+//calculate the number of months since the first start month
+int calculateMonthCount(int startYear, startMonth, currentYear, currentMonth) {
+  int monthCount = (currentYear - startYear) * 12 + currentMonth - startMonth + 1;
+  return monthCount;
+}
